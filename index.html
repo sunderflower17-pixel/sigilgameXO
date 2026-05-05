@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sigil Duel — The Ancient Game</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
+<audio id="bg-music" loop>
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+</audio>
+<style>
+  :root {
+    --bg: #060608;
+    --bg2: #0d0b12;
+    --panel: #110f1a;
+    --border: #2a2040;
+    --gold: #c9a84c;
+    --gold2: #f0cc70;
+    --crimson: #8b1a2f;
+    --crimson2: #c0294a;
+    --teal: #1a7a6e;
+    --teal2: #2bbda8;
+    --mist: rgba(201,168,76,0.07);
+    --glow-gold: 0 0 20px rgba(201,168,76,0.5), 0 0 60px rgba(201,168,76,0.2);
+    --glow-crimson: 0 0 20px rgba(192,41,74,0.6), 0 0 60px rgba(192,41,74,0.25);
+    --glow-teal: 0 0 20px rgba(43,189,168,0.5), 0 0 60px rgba(43,189,168,0.2);
+    --text: #d4c9a8;
+    --text-dim: #7a6f5a;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Cinzel', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* ── Animated starfield background ── */
+  #canvas-bg {
+    position: fixed; top:0; left:0; width:100%; height:100%;
+    z-index:0; pointer-events:none;
+  }
+
+  .scene {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 16px 12px;
+  }
+
+  /* ── Auth Screen ── */
+  #auth-screen {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 0;
+    animation: fadeIn 1.2s ease;
+  }
+
+  .logo-wrap {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .logo-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-weight: 900;
+    letter-spacing: 0.15em;
+    background: linear-gradient(135deg, #c9a84c 0%, #f0cc70 40%, #c9a84c 70%, #8a6a20 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+    filter: drop-shadow(0 0 30px rgba(201,168,76,0.4));
+    animation: pulse-logo 4s ease-in-out infinite;
+  }
+
+  .logo-sub {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    color: var(--text-dim);
+    font-size: 0.95rem;
+    letter-spacing: 0.3em;
+    margin-top: 8px;
+  }
+
+  .sigil-emblem {
+    width: 80px; height: 80px;
+    margin: 0 auto 16px;
+    animation: rotate-slow 20s linear infinite;
+  }
+
+  @keyframes rotate-slow { to { transform: rotate(360deg); } }
+  @keyframes pulse-logo {
+    0%,100% { filter: drop-shadow(0 0 20px rgba(201,168,76,0.3)); }
+    50% { filter: drop-shadow(0 0 50px rgba(201,168,76,0.7)); }
+  }
+
+  .auth-card {
+    background: linear-gradient(145deg, #130f1e, #0c0a14);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 40px 44px;
+    width: min(420px, 92vw);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(0,0,0,0.8), inset 0 1px 0 rgba(201,168,76,0.1);
+  }
+
+  .auth-card::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .auth-card::after {
+    content: '';
+    position: absolute; inset:0;
+    background: radial-gradient(ellipse at 50% 0%, rgba(201,168,76,0.05) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .tab-row {
+    display: flex; gap: 0;
+    margin-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab-btn {
+    flex:1; padding: 10px;
+    background: none; border: none;
+    color: var(--text-dim);
+    font-family: 'Cinzel', serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    text-transform: uppercase;
+  }
+
+  .tab-btn.active {
+    color: var(--gold);
+  }
+
+  .tab-btn.active::after {
+    content: '';
+    position: absolute; bottom:-1px; left:0; right:0; height:1px;
+    background: var(--gold);
+    box-shadow: var(--glow-gold);
+  }
+
+  .tab-btn:hover { color: var(--gold2); }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .form-label {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.25em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .form-input {
+    width: 100%;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.3s;
+  }
+
+  .form-input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(201,168,76,0.1), inset 0 0 20px rgba(201,168,76,0.03);
+  }
+
+  .form-input::placeholder { color: #3a3028; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #1e1628, #130f1e);
+    border: 1px solid var(--gold);
+    border-radius: 2px;
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn-primary::before {
+    content: '';
+    position: absolute; top:0; left:-100%; width:100%; height:100%;
+    background: linear-gradient(90deg, transparent, rgba(201,168,76,0.15), transparent);
+    transition: left 0.5s;
+  }
+
+  .btn-primary:hover::before { left: 100%; }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #2a1e38, #1e1628);
+    box-shadow: var(--glow-gold);
+    color: var(--gold2);
+  }
+
+  .auth-error {
+    color: var(--crimson2);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    margin-top: 12px;
+    text-align: center;
+    min-height: 20px;
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+  }
+
+  /* ── Lobby Screen ── */
+  #lobby-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: min(600px, 96vw);
+    animation: fadeIn 0.8s ease;
+  }
+
+  .lobby-header {
+    text-align: center;
+    width: 100%;
+  }
+
+  .greeting {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    letter-spacing: 0.1em;
+  }
+
+  .greeting span {
+    color: var(--gold);
+    font-style: normal;
+    font-family: 'Cinzel', serif;
+  }
+
+  .lobby-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.5rem;
+    color: var(--gold);
+    margin-top: 4px;
+    letter-spacing: 0.2em;
+  }
+
+  .panel {
+    background: linear-gradient(145deg, #130f1e, #0c0a14);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 28px 32px;
+    width: 100%;
+    position: relative;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+
+  .panel-title {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .room-code-display {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid var(--gold);
+    border-radius: 2px;
+    padding: 16px;
+    text-align: center;
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 2rem;
+    letter-spacing: 0.5em;
+    color: var(--gold2);
+    text-shadow: var(--glow-gold);
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .room-code-display:hover {
+    box-shadow: var(--glow-gold);
+  }
+
+  .copy-hint {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0;
+    color: var(--text-dim);
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+  }
+  .divider::before, .divider::after {
+    content:''; flex:1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border));
+  }
+  .divider::after { background: linear-gradient(90deg, var(--border), transparent); }
+
+  .join-row {
+    display: flex; gap: 10px;
+  }
+
+  .form-input-sm {
+    flex:1;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 0.3em;
+  }
+  .form-input-sm:focus { border-color: var(--teal2); }
+  .form-input-sm::placeholder { color: #2a2020; letter-spacing: 0.1em; }
+
+  .btn-join {
+    padding: 12px 20px;
+    background: linear-gradient(135deg, #0f1e1a, #091410);
+    border: 1px solid var(--teal2);
+    border-radius: 2px;
+    color: var(--teal2);
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+  }
+  .btn-join:hover { box-shadow: var(--glow-teal); }
+
+  .btn-logout {
+    background: none; border: 1px solid #2a2040;
+    border-radius: 2px;
+    color: var(--text-dim);
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+  }
+  .btn-logout:hover { color: var(--crimson2); border-color: var(--crimson2); }
+
+  .waiting-text {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    text-align: center;
+    margin-top: 12px;
+    display: none;
+  }
+
+  .waiting-text .dots::after {
+    content: '';
+    animation: dots 1.5s steps(4, end) infinite;
+  }
+  @keyframes dots {
+    0%   { content: ''; }
+    25%  { content: '.'; }
+    50%  { content: '..'; }
+    75%  { content: '...'; }
+    100% { content: ''; }
+  }
+
+  /* ── Game Screen ── */
+  #game-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    animation: fadeIn 0.8s ease;
+  }
+
+  .game-header {
+    text-align: center;
+  }
+
+  .game-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.2rem;
+    color: var(--gold);
+    letter-spacing: 0.25em;
+  }
+
+  .score-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 12px;
+    flex-wrap: wrap;
+  }
+
+  .player-card {
+    padding: 10px 20px;
+    border-radius: 2px;
+    font-size: 0.78rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border: 1px solid transparent;
+    transition: all 0.4s;
+    text-align: center;
+    min-width: 130px;
+    position: relative;
+  }
+
+  .player-card.p1 {
+    border-color: var(--crimson);
+    background: rgba(139,26,47,0.1);
+    color: #e08090;
+  }
+  .player-card.p1.active-turn {
+    border-color: var(--crimson2);
+    background: rgba(192,41,74,0.15);
+    box-shadow: var(--glow-crimson);
+    color: #ff9aaa;
+  }
+
+  .player-card.p2 {
+    border-color: var(--teal);
+    background: rgba(26,122,110,0.1);
+    color: #60c8b8;
+  }
+  .player-card.p2.active-turn {
+    border-color: var(--teal2);
+    background: rgba(43,189,168,0.15);
+    box-shadow: var(--glow-teal);
+    color: #7eeedd;
+  }
+
+  .player-score {
+    font-size: 1.4rem;
+    font-family: 'Cinzel Decorative', serif;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .vs-glyph {
+    color: var(--text-dim);
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 1rem;
+  }
+
+  .status-msg {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    color: var(--gold);
+    font-size: 1rem;
+    text-align: center;
+    letter-spacing: 0.05em;
+    min-height: 28px;
+    transition: all 0.3s;
+  }
+
+  /* ── Board ── */
+  .board-wrap {
+    position: relative;
+  }
+
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 8px;
+    padding: 20px;
+    background: linear-gradient(145deg, #130f1e, #0c0a14);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.6), inset 0 0 40px rgba(201,168,76,0.02);
+    position: relative;
+  }
+
+  .board::before {
+    content: '';
+    position: absolute; top:0; left:0; right:0; height:1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+
+  .cell {
+    width: 110px; height: 110px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid #1e1830;
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, background 0.3s;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+@media(max-width:480px) {
+  .cell { width: 26vw; height: 26vw; }
+
+  .auth-card { padding: 28px 20px; }
+
+  .logo-title { font-size: 2rem; }
+
+  .board { gap: 5px; padding: 12px; }
+
+  .score-row { gap: 6px; }
+
+  .player-card { min-width: 100px; padding: 8px 12px; font-size: 0.7rem; }
+
+  .player-score { font-size: 1.1rem; }
+
+  .btn-row { flex-direction: column; align-items: center; width: 100%; }
+
+  .btn-again, .btn-lobby { width: 100%; text-align: center; }
+
+  .join-row { flex-direction: column; }
+
+  .btn-join { width: 100%; padding: 12px; }
+
+  .room-code-display { font-size: 1.4rem; letter-spacing: 0.3em; }
+
+  .game-title { font-size: 1rem; }
+
+  .status-msg { font-size: 0.85rem; }
+
+  .panel { padding: 20px 16px; }
+
+  .win-title { font-size: 1.6rem; }
+
+  .win-rune { font-size: 3.5rem; }
+}
+
+  .cell:hover:not(.taken) {
+    border-color: rgba(201,168,76,0.3);
+    background: rgba(201,168,76,0.03);
+  }
+
+  .cell.taken { cursor: default; }
+
+  /* Sigil SVG inside cell */
+  .cell-sigil {
+    width: 70%; height: 70%;
+    opacity: 0;
+    transform: scale(0.3) rotate(-30deg);
+    transition: none;
+    position: absolute;
+  }
+
+  .cell-sigil.appear {
+    animation: sigilAppear 0.6s cubic-bezier(0.17,0.67,0.35,1.2) forwards;
+  }
+
+  @keyframes sigilAppear {
+    0%   { opacity:0; transform: scale(0.2) rotate(-40deg); filter: blur(8px); }
+    60%  { opacity:1; transform: scale(1.15) rotate(5deg); filter: blur(0); }
+    100% { opacity:1; transform: scale(1) rotate(0deg); filter: blur(0); }
+  }
+
+  .cell.p1-cell {
+    border-color: rgba(139,26,47,0.5);
+    background: rgba(139,26,47,0.06);
+  }
+  .cell.p2-cell {
+    border-color: rgba(26,122,110,0.5);
+    background: rgba(26,122,110,0.06);
+  }
+
+  .cell.win-cell {
+    animation: winPulse 0.8s ease forwards;
+  }
+
+  @keyframes winPulse {
+    0%   { transform: scale(1); }
+    30%  { transform: scale(1.08); }
+    60%  { transform: scale(0.96); }
+    100% { transform: scale(1); }
+  }
+
+  /* corner ornaments */
+  .board-corner {
+    position: absolute;
+    width: 16px; height: 16px;
+    border-color: var(--gold);
+    border-style: solid;
+    opacity: 0.4;
+  }
+  .board-corner.tl { top:6px;left:6px; border-width:1px 0 0 1px; }
+  .board-corner.tr { top:6px;right:6px; border-width:1px 1px 0 0; }
+  .board-corner.bl { bottom:6px;left:6px; border-width:0 0 1px 1px; }
+  .board-corner.br { bottom:6px;right:6px; border-width:0 1px 1px 0; }
+
+  /* ── Win overlay ── */
+  #win-overlay {
+    display:none;
+    position:fixed; inset:0; z-index:100;
+    background: rgba(0,0,0,0.85);
+    align-items:center; justify-content:center;
+    flex-direction:column;
+    gap:24px;
+    animation: fadeIn 0.4s ease;
+    text-align:center;
+    padding:20px;
+  }
+
+  #win-overlay.show { display:flex; }
+
+  .win-rune {
+    font-size: 5rem;
+    animation: winFloat 2s ease-in-out infinite;
+  }
+
+  @keyframes winFloat {
+    0%,100% { transform: translateY(0) rotate(-5deg); }
+    50% { transform: translateY(-18px) rotate(5deg); }
+  }
+
+  .win-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(1.5rem, 5vw, 3rem);
+    letter-spacing: 0.2em;
+  }
+
+  .win-sub {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    color: var(--text-dim);
+    font-size: 1.1rem;
+  }
+
+  .btn-again {
+    padding: 14px 40px;
+    background: linear-gradient(135deg, #1e1628, #130f1e);
+    border: 1px solid var(--gold);
+    border-radius: 2px;
+    color: var(--gold);
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.3em;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+  }
+  .btn-again:hover { box-shadow: var(--glow-gold); color: var(--gold2); }
+
+  .btn-lobby {
+    padding: 10px 28px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text-dim);
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-transform: uppercase;
+  }
+  .btn-lobby:hover { border-color: var(--text-dim); color: var(--text); }
+
+  @keyframes fadeIn {
+    from { opacity:0; transform: translateY(10px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: fixed; bottom: 24px; left:50%; transform:translateX(-50%);
+    background: var(--gold);
+    color: #0a0808;
+    padding: 8px 20px;
+    border-radius: 2px;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    opacity: 0;
+    pointer-events:none;
+    transition: opacity 0.3s;
+    z-index: 200;
+    white-space: nowrap;
+  }
+  .tooltip.show { opacity:1; }
+
+  /* Ripple on cell click */
+  .ripple {
+    position: absolute;
+    border-radius: 50%;
+    transform: scale(0);
+    animation: rippleAnim 0.5s linear;
+    pointer-events: none;
+  }
+  @keyframes rippleAnim {
+    to { transform: scale(3); opacity: 0; }
+  }
+
+  /* Game info bar */
+  .game-info-bar {
+    display:flex; gap:16px; align-items:center; justify-content:center; flex-wrap:wrap;
+  }
+
+  .room-badge {
+    font-size:0.65rem; letter-spacing:0.2em; color:var(--text-dim);
+    border:1px solid var(--border); border-radius:2px; padding:4px 12px;
+    text-transform:uppercase;
+  }
+
+  .turn-indicator {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block; margin-right: 6px;
+  }
+  .turn-indicator.p1 { background: var(--crimson2); box-shadow: 0 0 8px var(--crimson2); }
+  .turn-indicator.p2 { background: var(--teal2); box-shadow: 0 0 8px var(--teal2); }
+
+  /* Win line */
+  .win-line-svg {
+    position:absolute; top:0; left:0; width:100%; height:100%;
+    pointer-events:none; z-index:10;
+  }
+  .win-line-path {
+    stroke-dasharray: 400;
+    stroke-dashoffset: 400;
+    animation: drawLine 0.6s ease forwards;
+  }
+  @keyframes drawLine {
+    to { stroke-dashoffset: 0; }
+  }
+
+  .btn-row { display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<canvas id="canvas-bg"></canvas>
+
+<!-- ═══════════════ AUTH SCREEN ═══════════════ -->
+<div class="scene" id="auth-screen">
+  <div class="logo-wrap">
+    <svg class="sigil-emblem" viewBox="0 0 80 80" fill="none">
+      <circle cx="40" cy="40" r="36" stroke="#c9a84c" stroke-width="0.5" opacity="0.4"/>
+      <circle cx="40" cy="40" r="28" stroke="#c9a84c" stroke-width="0.3" opacity="0.3"/>
+      <polygon points="40,8 68,56 12,56" fill="none" stroke="#c9a84c" stroke-width="0.7" opacity="0.6"/>
+      <polygon points="40,72 12,24 68,24" fill="none" stroke="#c9a84c" stroke-width="0.7" opacity="0.6"/>
+      <circle cx="40" cy="40" r="4" fill="#c9a84c" opacity="0.7"/>
+    </svg>
+    <div class="logo-title">Sigil Duel</div>
+    <div class="logo-sub">— where runes decide fate —</div>
+  </div>
+
+  <div class="auth-card">
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Enter the Circle</button>
+      <button class="tab-btn" id="tab-register" onclick="switchTab('register')">Claim Your Name</button>
+    </div>
+
+    <div id="login-form">
+      <div class="form-group">
+        <label class="form-label">Your Name</label>
+        <input class="form-input" id="login-user" placeholder="Invoke your alias…" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Blood Oath (Password)</label>
+        <input class="form-input" id="login-pass" type="password" placeholder="Whisper the secret…">
+      </div>
+      <button class="btn-primary" onclick="doLogin()">⬡ Enter</button>
+    </div>
+
+    <div id="register-form" style="display:none">
+      <div class="form-group">
+        <label class="form-label">Choose Your Name</label>
+        <input class="form-input" id="reg-user" placeholder="Name yourself…" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Seal Your Oath</label>
+        <input class="form-input" id="reg-pass" type="password" placeholder="Bind your secret…">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm the Seal</label>
+        <input class="form-input" id="reg-pass2" type="password" placeholder="Once more…">
+      </div>
+      <button class="btn-primary" onclick="doRegister()">⬡ Enter the Void</button>
+    </div>
+
+    <div class="auth-error" id="auth-error"></div>
+  </div>
+</div>
+
+<!-- ═══════════════ LOBBY SCREEN ═══════════════ -->
+<div class="scene" id="lobby-screen">
+  <div class="lobby-header">
+    <div class="greeting">You walk as <span id="lobby-username"></span></div>
+    <div class="lobby-title">The Sanctum</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">⬡ Open a Portal — Invite a Challenger</div>
+    <div class="room-code-display" id="room-code-display" onclick="copyCode()" title="Click to copy"></div>
+    <div class="copy-hint">Click the sigil above to copy your room code</div>
+    <div class="waiting-text" id="waiting-text">
+      Awaiting the challenger<span class="dots"></span>
+    </div>
+
+    <div class="divider">or join a circle</div>
+
+    <div class="join-row">
+      <input class="form-input-sm" id="join-code-input" placeholder="Enter code…" maxlength="6" autocomplete="off" spellcheck="false">
+      <button class="btn-join" onclick="doJoin()">→ Join</button>
+    </div>
+  </div>
+
+  <button class="btn-logout" onclick="doLogout()">Vanish from the Circle</button>
+</div>
+
+<!-- ═══════════════ GAME SCREEN ═══════════════ -->
+<div class="scene" id="game-screen">
+  <div class="game-header">
+    <div class="game-title">Sigil Duel</div>
+  </div>
+
+  <div class="game-info-bar">
+    <div class="room-badge" id="game-room-badge">Room: ——</div>
+  </div>
+
+  <div class="score-row">
+    <div class="player-card p1" id="p1-card">
+      <span id="p1-name">Invoker</span>
+      <span class="player-score" id="p1-score">0</span>
+    </div>
+    <div class="vs-glyph">⬡</div>
+    <div class="player-card p2" id="p2-card">
+      <span id="p2-name">Challenger</span>
+      <span class="player-score" id="p2-score">0</span>
+    </div>
+  </div>
+
+  <div class="status-msg" id="status-msg">The duel begins…</div>
+
+  <div class="board-wrap">
+    <div class="board" id="board">
+      <div class="board-corner tl"></div>
+      <div class="board-corner tr"></div>
+      <div class="board-corner bl"></div>
+      <div class="board-corner br"></div>
+      <!-- cells injected by JS -->
+    </div>
+    <svg class="win-line-svg" id="win-line-svg" viewBox="0 0 360 360"></svg>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn-again" onclick="requestRematch()">⬡ Another Round</button>
+    <button class="btn-lobby" onclick="backToLobby()">Leave the Circle</button>
+  </div>
+</div>
+
+<!-- ═══════════════ WIN OVERLAY ═══════════════ -->
+<div id="win-overlay">
+  <div class="win-rune" id="win-rune">🔮</div>
+  <div class="win-title" id="win-title" style="color:var(--gold)">Victory</div>
+  <div class="win-sub" id="win-sub">The ancient forces bow to your will</div>
+  <div class="btn-row">
+    <button class="btn-again" onclick="requestRematch()">⬡ Duel Again</button>
+    <button class="btn-lobby" onclick="backToLobby()">Return to Sanctum</button>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip">Copied!</div>
+
+<script>
+// ═══════════════════════════════════════════════
+//  CANVAS STARFIELD
+// ═══════════════════════════════════════════════
+(function() {
+  const canvas = document.getElementById('canvas-bg');
+  const ctx = canvas.getContext('2d');
+  let W, H, stars = [];
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function makeStars() {
+    stars = [];
+    const count = Math.floor((W * H) / 4000);
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: Math.random() * 1.2 + 0.2,
+        a: Math.random(),
+        sp: 0.003 + Math.random() * 0.008,
+        drift: (Math.random()-0.5)*0.08
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    // vignette
+    const grad = ctx.createRadialGradient(W/2,H/2,H*0.1, W/2,H/2,H*0.9);
+    grad.addColorStop(0,'rgba(13,11,18,0)');
+    grad.addColorStop(1,'rgba(4,3,6,0.95)');
+    ctx.fillStyle = grad; ctx.fillRect(0,0,W,H);
+
+    stars.forEach(s => {
+      s.a += s.sp; if(s.a>1) s.a=0;
+      s.x += s.drift;
+      if(s.x<0) s.x=W; if(s.x>W) s.x=0;
+      const alpha = Math.abs(Math.sin(s.a * Math.PI));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = `rgba(201,168,76,${alpha*0.6})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', ()=>{ resize(); makeStars(); });
+  resize(); makeStars(); draw();
+})();
+
+// ═══════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════
+let currentUser = null;
+let gameState = null;  // null or {roomCode, p1, p2, board, turn, scores, myRole, phase}
+let pollTimer = null;
+
+// ═══════════════════════════════════════════════
+//  AUTH (localStorage-based, multi-device via shared key)
+// ═══════════════════════════════════════════════
+function getUsers() {
+  try { return JSON.parse(localStorage.getItem('sd_users') || '{}'); } catch(e){ return {}; }
+}
+function saveUsers(u) { localStorage.setItem('sd_users', JSON.stringify(u)); }
+
+function switchTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-register').classList.toggle('active', tab==='register');
+  document.getElementById('login-form').style.display = tab==='login' ? '' : 'none';
+  document.getElementById('register-form').style.display = tab==='register' ? '' : 'none';
+  document.getElementById('auth-error').textContent = '';
+}
+
+function doRegister() {
+  const u = document.getElementById('reg-user').value.trim();
+  const p = document.getElementById('reg-pass').value;
+  const p2 = document.getElementById('reg-pass2').value;
+  const err = document.getElementById('auth-error');
+  if(!u || u.length<2) { err.textContent='Your name must have at least 2 letters.'; return; }
+  if(!p || p.length<4) { err.textContent='Your oath must be at least 4 characters.'; return; }
+  if(p!==p2) { err.textContent='The oaths do not match.'; return; }
+  const users = getUsers();
+  if(users[u.toLowerCase()]) { err.textContent='That name is already claimed by another soul.'; return; }
+  users[u.toLowerCase()] = { username: u, pass: p };
+  saveUsers(users);
+  currentUser = u;
+  localStorage.setItem('sd_session', u);
+  showLobby();
+}
+
+function doLogin() {
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  const err = document.getElementById('auth-error');
+  const users = getUsers();
+  const record = users[u.toLowerCase()];
+  if(!record || record.pass !== p) { err.textContent='The incantation failed. Check your name and oath.'; return; }
+  currentUser = record.username;
+  localStorage.setItem('sd_session', currentUser);
+  showLobby();
+}
+
+function doLogout() {
+  localStorage.removeItem('sd_session');
+  cleanupRoom();
+  currentUser = null;
+  showScreen('auth-screen');
+}
+
+// auto-login on page load
+(function() {
+  const saved = localStorage.getItem('sd_session');
+  if(saved) {
+    const users = getUsers();
+    if(users[saved.toLowerCase()]) {
+      currentUser = users[saved.toLowerCase()].username;
+      showLobby();
+      return;
+    }
+  }
+  showScreen('auth-screen');
+})();
+
+// ═══════════════════════════════════════════════
+//  SCREENS
+// ═══════════════════════════════════════════════
+function showScreen(id) {
+  ['auth-screen','lobby-screen','game-screen'].forEach(s => {
+    document.getElementById(s).style.display = 'none';
+  });
+  document.getElementById(id).style.display = 'flex';
+}
+
+function showLobby() {
+  cleanupRoom();
+  showScreen('lobby-screen');
+  document.getElementById('lobby-username').textContent = currentUser;
+  const code = generateRoomCode();
+  document.getElementById('room-code-display').textContent = code;
+  createRoom(code);
+}
+
+// ═══════════════════════════════════════════════
+//  ROOM SYSTEM (localStorage shared state — works across tabs/invites on same browser)
+// ═══════════════════════════════════════════════
+function generateRoomCode() {
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let c='';
+  for(let i=0;i<6;i++) c+=chars[Math.floor(Math.random()*chars.length)];
+  return c;
+}
+
+const _supabase = supabase.createClient(
+  'YOUR_PROJECT_URL',
+  'YOUR_ANON_KEY'
+);
+
+async function getRooms() {
+  const { data } = await _supabase.from('rooms').select('code, data');
+  const out = {};
+  (data||[]).forEach(row => out[row.code] = row.data);
+  return out;
+}
+
+async function saveRooms(rooms) {
+  const rows = Object.entries(rooms).map(([code, data]) => ({ code, data, updated_at: new Date().toISOString() }));
+  await _supabase.from('rooms').upsert(rows);
+}
+
+async function createRoom(code) {
+  const rooms = await getRooms();
+  rooms[code] = {
+    p1: currentUser,
+    p2: null,
+    board: Array(9).fill(null),
+    turn: 'p1',
+    scores: { p1:0, p2:0 },
+    phase: 'waiting',
+    rematch: null,
+    ts: Date.now()
+  };
+  await saveRooms(rooms);
+  document.getElementById('waiting-text').style.display = 'block';
+  gameState = { roomCode: code, myRole: 'p1' };
+  startPolling();
+}
+
+async function doJoin() {
+  const code = document.getElementById('join-code-input').value.trim().toUpperCase();
+  if(code.length < 4) { alert('Enter a valid room code.'); return; }
+  const rooms = await getRooms();
+  const room = rooms[code];
+  if(!room) { alert('No portal found with that code. Ask your challenger to share it.'); return; }
+  if(room.p2 && room.p2 !== currentUser) { alert('This circle is already full.'); return; }
+  if(room.p1 === currentUser) { alert('You cannot duel yourself… or can you?'); return; }
+  room.p2 = currentUser;
+  room.phase = 'active';
+  rooms[code] = room;
+  await saveRooms(rooms);
+  gameState = { roomCode: code, myRole: 'p2' };
+  startGame(room);
+}
+
+function cleanupRoom() {
+  if(pollTimer) { clearInterval(pollTimer); pollTimer=null; }
+  gameState = null;
+}
+
+// ═══════════════════════════════════════════════
+//  POLLING — detect room updates
+// ═══════════════════════════════════════════════
+let lastRoomSnapshot = null;
+
+function startPolling() {
+  if(pollTimer) clearInterval(pollTimer);
+  lastRoomSnapshot = null;
+  pollTimer = setInterval(pollRoom, 500);
+}
+
+async function pollRoom() {
+  if(!gameState) return;
+  const rooms = await getRooms();
+  const room = rooms[gameState.roomCode];
+  if(!room) return;
+
+  const snap = JSON.stringify(room);
+  if(snap === lastRoomSnapshot) return;
+  lastRoomSnapshot = snap;
+
+  // Joined!
+  if(room.phase === 'active' && document.getElementById('lobby-screen').style.display !== 'none') {
+    startGame(room);
+    return;
+  }
+
+  if(room.phase === 'active' || room.phase === 'ended') {
+    syncBoardFromRoom(room);
+  }
+
+  // Rematch requested
+  if(room.rematch) {
+    const rematchCode = room.rematch;
+    const rRooms = getRooms();
+    const rRoom = rRooms[rematchCode];
+    if(rRoom && rRoom.p2) {
+      gameState = { roomCode: rematchCode, myRole: gameState.myRole==='p1'?'p2':'p1' };
+      startGame(rRoom);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  GAME LOGIC
+// ═══════════════════════════════════════════════
+const WINS = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+// Different mystical sigils for each player
+const SIGILS = {
+  p1: `<svg viewBox="0 0 60 60" class="cell-sigil" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="30" cy="30" r="26" fill="none" stroke="#c0294a" stroke-width="1.5" opacity="0.4"/>
+    <circle cx="30" cy="30" r="18" fill="none" stroke="#c0294a" stroke-width="1" opacity="0.5"/>
+    <line x1="30" y1="4" x2="30" y2="56" stroke="#c0294a" stroke-width="1" opacity="0.5"/>
+    <line x1="4" y1="30" x2="56" y2="30" stroke="#c0294a" stroke-width="1" opacity="0.5"/>
+    <line x1="11" y1="11" x2="49" y2="49" stroke="#c0294a" stroke-width="0.8" opacity="0.4"/>
+    <line x1="49" y1="11" x2="11" y2="49" stroke="#c0294a" stroke-width="0.8" opacity="0.4"/>
+    <circle cx="30" cy="30" r="5" fill="#c0294a" opacity="0.9"/>
+    <circle cx="30" cy="4" r="2" fill="#c0294a" opacity="0.7"/>
+    <circle cx="30" cy="56" r="2" fill="#c0294a" opacity="0.7"/>
+    <circle cx="4" cy="30" r="2" fill="#c0294a" opacity="0.7"/>
+    <circle cx="56" cy="30" r="2" fill="#c0294a" opacity="0.7"/>
+  </svg>`,
+  p2: `<svg viewBox="0 0 60 60" class="cell-sigil" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="30,4 54,42 6,42" fill="none" stroke="#2bbda8" stroke-width="1.5" opacity="0.5"/>
+    <polygon points="30,56 6,18 54,18" fill="none" stroke="#2bbda8" stroke-width="1.5" opacity="0.5"/>
+    <circle cx="30" cy="30" r="8" fill="none" stroke="#2bbda8" stroke-width="1.5" opacity="0.6"/>
+    <circle cx="30" cy="30" r="3" fill="#2bbda8" opacity="0.9"/>
+    <circle cx="30" cy="4" r="2" fill="#2bbda8" opacity="0.7"/>
+    <circle cx="6" cy="42" r="2" fill="#2bbda8" opacity="0.7"/>
+    <circle cx="54" cy="42" r="2" fill="#2bbda8" opacity="0.7"/>
+  </svg>`
+};
+
+function startGame(room) {
+  showScreen('game-screen');
+  const music = document.getElementById('bg-music');
+  music.volume = 0.3;
+  music.play().catch(()=>{});
+  document.getElementById('win-overlay').classList.remove('show');
+  document.getElementById('game-room-badge').textContent = 'Room: '+gameState.roomCode;
+
+  document.getElementById('p1-name').textContent = room.p1;
+  document.getElementById('p2-name').textContent = room.p2||'Challenger';
+  document.getElementById('p1-score').textContent = room.scores.p1;
+  document.getElementById('p2-score').textContent = room.scores.p2;
+
+  buildBoard();
+  syncBoardFromRoom(room);
+  startPolling();
+}
+
+function buildBoard() {
+  const board = document.getElementById('board');
+  // remove old cells only
+  board.querySelectorAll('.cell').forEach(c=>c.remove());
+  document.getElementById('win-line-svg').innerHTML='';
+
+  for(let i=0;i<9;i++) {
+    const cell = document.createElement('div');
+    cell.className='cell';
+    cell.dataset.i = i;
+    cell.addEventListener('click', ()=>onCellClick(i));
+    cell.innerHTML = SIGILS.p1 + SIGILS.p2;
+    // hide both sigils
+    cell.querySelectorAll('.cell-sigil').forEach(s=>{ s.style.opacity='0'; s.style.transform='scale(0)'; });
+    board.appendChild(cell);
+  }
+}
+
+function syncBoardFromRoom(room) {
+  const cells = document.querySelectorAll('.cell');
+
+  document.getElementById('p1-score').textContent = room.scores.p1;
+  document.getElementById('p2-score').textContent = room.scores.p2;
+  document.getElementById('p1-name').textContent = room.p1;
+  document.getElementById('p2-name').textContent = room.p2||'Challenger';
+
+  room.board.forEach((val, i) => {
+    if(!val) return;
+    const cell = cells[i];
+    if(cell.classList.contains('taken')) return;
+    placeMarkVisual(cell, val, false);
+  });
+
+  const w = checkWin(room.board);
+  const full = room.board.every(v=>v);
+
+  // Update turn indicators
+  document.getElementById('p1-card').classList.toggle('active-turn', room.turn==='p1');
+  document.getElementById('p2-card').classList.toggle('active-turn', room.turn==='p2');
+
+  if(w) {
+    drawWinLine(w.line);
+    const winnerName = w.winner==='p1' ? room.p1 : room.p2;
+    showWin(winnerName, w.winner===gameState.myRole, false);
+  } else if(full) {
+    showWin(null, false, true);
+  } else {
+    // status
+    const myTurn = room.turn === gameState.myRole;
+    const turnName = room.turn==='p1' ? room.p1 : room.p2;
+    const statusEl = document.getElementById('status-msg');
+    if(myTurn) {
+      statusEl.style.color='var(--gold)';
+      statusEl.innerHTML = `<span class="turn-indicator ${gameState.myRole}"></span>Your rune to place…`;
+    } else {
+      statusEl.style.color='var(--text-dim)';
+      statusEl.innerHTML = `<span class="turn-indicator ${room.turn}"></span>${turnName} ponders their fate…`;
+    }
+  }
+}
+
+function placeMarkVisual(cell, player, animate=true) {
+  cell.classList.add('taken', player+'-cell');
+  const sigil = cell.querySelectorAll('.cell-sigil')[player==='p1'?0:1];
+  sigil.style.opacity='1';
+  sigil.style.transform='scale(1)';
+  if(animate) sigil.classList.add('appear');
+
+  // ripple
+  if(animate) {
+    const rip = document.createElement('div');
+    rip.className='ripple';
+    rip.style.cssText=`width:80px;height:80px;top:50%;left:50%;margin:-40px;background:${player==='p1'?'rgba(192,41,74,0.3)':'rgba(43,189,168,0.3)'}`;
+    cell.appendChild(rip);
+    setTimeout(()=>rip.remove(), 600);
+  }
+}
+
+async function onCellClick(i) {
+  const rooms = await getRooms();
+  const room = rooms[gameState.roomCode];
+  if(!room) return;
+  if(room.phase !== 'active') return;
+  if(room.turn !== gameState.myRole) return;
+  if(room.board[i]) return;
+
+  room.board[i] = gameState.myRole;
+  const cells = document.querySelectorAll('.cell');
+  placeMarkVisual(cells[i], gameState.myRole, true);
+
+  const w = checkWin(room.board);
+  const full = room.board.every(v=>v);
+
+  if(w) {
+    room.scores[w.winner]++;
+    room.phase='ended';
+    room.turn = null;
+    drawWinLine(w.line);
+    const winnerName = w.winner==='p1' ? room.p1 : room.p2;
+    showWin(winnerName, w.winner===gameState.myRole, false);
+  } else if(full) {
+    room.phase='ended';
+    room.turn=null;
+    showWin(null,false,true);
+  } else {
+    room.turn = room.turn==='p1' ? 'p2' : 'p1';
+    const statusEl = document.getElementById('status-msg');
+    statusEl.style.color='var(--text-dim)';
+    const nextName = room.turn==='p1' ? room.p1 : room.p2;
+    statusEl.innerHTML=`<span class="turn-indicator ${room.turn}"></span>${nextName} ponders their fate…`;
+  }
+
+ rooms[gameState.roomCode] = room;
+  await saveRooms(rooms);
+  document.getElementById('p1-score').textContent = room.scores.p1;
+  document.getElementById('p2-score').textContent = room.scores.p2;
+}
+
+function checkWin(board) {
+  for(const line of WINS) {
+    const [a,b,c]=line;
+    if(board[a] && board[a]===board[b] && board[b]===board[c]) {
+      return { winner: board[a], line };
+    }
+  }
+  return null;
+}
+
+function showWin(name, isMine, isDraw) {
+  const overlay = document.getElementById('win-overlay');
+  const title = document.getElementById('win-title');
+  const sub = document.getElementById('win-sub');
+  const rune = document.getElementById('win-rune');
+  const statusEl = document.getElementById('status-msg');
+
+  if(isDraw) {
+    rune.textContent='⚖️';
+    title.textContent='The Fates Are Balanced';
+    title.style.color='var(--gold)';
+    sub.textContent='Neither spirit claims dominion. Play again?';
+    statusEl.textContent='The spirits are balanced. A draw.';
+    statusEl.style.color='var(--text-dim)';
+  } else if(isMine) {
+    rune.textContent='🔮';
+    title.textContent='Victory is Yours';
+    title.style.color='var(--gold2)';
+    sub.textContent='The ancient forces bow to your will.';
+    statusEl.innerHTML=`<span style="color:var(--gold2)">${name} claims the circle!</span>`;
+  } else {
+    rune.textContent='💀';
+    title.textContent='Defeated';
+    title.style.color='var(--crimson2)';
+    sub.textContent='The shadows consumed you this time…';
+    statusEl.innerHTML=`<span style="color:var(--crimson2)">${name} claims the circle.</span>`;
+  }
+
+  overlay.classList.add('show');
+}
+
+function drawWinLine(line) {
+  const svg = document.getElementById('win-line-svg');
+  svg.innerHTML='';
+  const cells = document.querySelectorAll('.cell');
+  const board = document.getElementById('board');
+  const bRect = board.getBoundingClientRect();
+
+  const getCenter = (i) => {
+    const r = cells[i].getBoundingClientRect();
+    return {
+      x: r.left - bRect.left + r.width/2,
+      y: r.top - bRect.top + r.height/2
+    };
+  };
+
+  const a = getCenter(line[0]);
+  const b = getCenter(line[2]);
+  const rooms = getRooms();
+  const room = rooms[gameState.roomCode];
+  const winner = room ? checkWin(room.board) : null;
+  const color = winner&&winner.winner==='p1' ? '#c0294a' : '#2bbda8';
+
+  // Adjust svg viewBox to board
+  svg.setAttribute('viewBox', `0 0 ${bRect.width} ${bRect.height}`);
+
+  const path = document.createElementNS('http://www.w3.org/2000/svg','line');
+  path.setAttribute('x1', a.x); path.setAttribute('y1', a.y);
+  path.setAttribute('x2', b.x); path.setAttribute('y2', b.y);
+  path.setAttribute('stroke', color);
+  path.setAttribute('stroke-width','3');
+  path.setAttribute('stroke-linecap','round');
+  path.setAttribute('opacity','0.85');
+  path.setAttribute('filter',`drop-shadow(0 0 8px ${color})`);
+  path.classList.add('win-line-path');
+  path.style.strokeDasharray='600';
+  path.style.strokeDashoffset='600';
+  svg.appendChild(path);
+
+  // mark win cells
+  line.forEach(i => cells[i].classList.add('win-cell'));
+}
+
+// ═══════════════════════════════════════════════
+//  REMATCH
+// ═══════════════════════════════════════════════
+async function requestRematch() {
+  document.getElementById('win-overlay').classList.remove('show');
+  const rooms = await getRooms();
+  const oldRoom = rooms[gameState.roomCode];
+  if(!oldRoom) return;
+
+  if(gameState.myRole==='p1') {
+    const newCode = generateRoomCode();
+    rooms[newCode]={
+      p1: oldRoom.p2,
+      p2: oldRoom.p1,
+      board: Array(9).fill(null),
+      turn:'p1',
+      scores: {...oldRoom.scores},
+      phase:'active',
+      rematch:null, ts:Date.now()
+    };
+    oldRoom.rematch = newCode;
+    rooms[gameState.roomCode]=oldRoom;
+    await saveRooms(rooms);
+    gameState={ roomCode:newCode, myRole:'p2' };
+    startGame(rooms[newCode]);
+  } else {
+    const newCode = generateRoomCode();
+    rooms[newCode]={
+      p1: oldRoom.p2,
+      p2: oldRoom.p1,
+      board: Array(9).fill(null),
+      turn:'p1',
+      scores:{...oldRoom.scores},
+      phase:'active',
+      rematch:null, ts:Date.now()
+    };
+    oldRoom.rematch=newCode;
+    rooms[gameState.roomCode]=oldRoom;
+    await saveRooms(rooms);
+    gameState={ roomCode:newCode, myRole:'p1' };
+    startGame(rooms[newCode]);
+  }
+}
+
+function backToLobby() {
+  document.getElementById('win-overlay').classList.remove('show');
+  document.getElementById('bg-music').pause();
+  document.getElementById('bg-music').currentTime = 0;
+  showLobby();
+}
+
+// ═══════════════════════════════════════════════
+//  COPY CODE
+// ═══════════════════════════════════════════════
+function copyCode() {
+  const code = document.getElementById('room-code-display').textContent;
+  navigator.clipboard.writeText(code).catch(()=>{});
+  const t = document.getElementById('tooltip');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+// ═══════════════════════════════════════════════
+//  KEYBOARD ENTER
+// ═══════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if(e.key==='Enter') {
+    if(document.getElementById('auth-screen').style.display!=='none') {
+      const loginVisible = document.getElementById('login-form').style.display!=='none';
+      if(loginVisible) doLogin(); else doRegister();
+    } else if(document.getElementById('lobby-screen').style.display!=='none') {
+      doJoin();
+    }
+  }
+});
+
+// clean old rooms every load
+(async function cleanOldRooms(){
+  const rooms = await getRooms();
+  const cutoff=Date.now()-2*60*60*1000;
+  let changed=false;
+  Object.keys(rooms).forEach(k=>{
+    if(rooms[k].ts<cutoff){delete rooms[k];changed=true;}
+  });
+  if(changed) await saveRooms(rooms);
+})();
+</script>
+</body>
+</html>
