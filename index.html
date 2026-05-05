@@ -6,7 +6,7 @@
 <title>Sigil Duel — The Ancient Game</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Cinzel:wght@400;600&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
 <audio id="bg-music" loop>
-  <source src="MagicalFantasy.mp3" type="audio/mpeg">
+  <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
 </audio>
 <style>
   :root {
@@ -1055,8 +1055,8 @@ function generateRoomCode() {
 }
 
 const _supabase = supabase.createClient(
-  'YOUR_PROJECT_URL',
-  'YOUR_ANON_KEY'
+  'https://fihkqayvtapbgtkvjfzh.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpaGtxYXl2dGFwYmd0a3ZqZnpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTExODgsImV4cCI6MjA5MzU2NzE4OH0.LKH6Nib-GHIzg_t08iSMg0v17K7j5e7-zXoJFzTniow'
 );
 
 async function getRooms() {
@@ -1101,8 +1101,9 @@ async function doJoin() {
   room.phase = 'active';
   rooms[code] = room;
   await saveRooms(rooms);
-  gameState = { roomCode: code, myRole: 'p2' };
-  startGame(room);
+gameState = { roomCode: code, myRole: 'p2' };
+showScreen('game-screen');   // ← add this line
+startGame(room);
 }
 
 function cleanupRoom() {
@@ -1132,10 +1133,10 @@ async function pollRoom() {
   lastRoomSnapshot = snap;
 
   // Joined!
-  if(room.phase === 'active' && document.getElementById('lobby-screen').style.display !== 'none') {
+ if(room.phase === 'active' && document.getElementById('lobby-screen').style.display === 'flex') {
     startGame(room);
     return;
-  }
+}
 
   if(room.phase === 'active' || room.phase === 'ended') {
     syncBoardFromRoom(room);
@@ -1144,8 +1145,8 @@ async function pollRoom() {
   // Rematch requested
   if(room.rematch) {
     const rematchCode = room.rematch;
-    const rRooms = getRooms();
-    const rRoom = rRooms[rematchCode];
+const rRooms = await getRooms();
+const rRoom = rRooms[rematchCode];
     if(rRoom && rRoom.p2) {
       gameState = { roomCode: rematchCode, myRole: gameState.myRole==='p1'?'p2':'p1' };
       startGame(rRoom);
@@ -1382,10 +1383,11 @@ function drawWinLine(line) {
 
   const a = getCenter(line[0]);
   const b = getCenter(line[2]);
-  const rooms = getRooms();
-  const room = rooms[gameState.roomCode];
-  const winner = room ? checkWin(room.board) : null;
-  const color = winner&&winner.winner==='p1' ? '#c0294a' : '#2bbda8';
+const p1cell = document.querySelector('.cell.p1-cell');
+const p2cell = document.querySelector('.cell.p2-cell');
+// Check which player owns the winning cells
+const winnerIs = document.querySelector(`.cell[data-i="${line[0]}"]`)?.classList.contains('p1-cell') ? 'p1' : 'p2';
+const color = winnerIs === 'p1' ? '#c0294a' : '#2bbda8';
 
   // Adjust svg viewBox to board
   svg.setAttribute('viewBox', `0 0 ${bRect.width} ${bRect.height}`);
